@@ -54,6 +54,8 @@
             const [vpnLocation, setVpnLocation] = useState('USA - New York');
             const [virtualIp, setVirtualIp] = useState('192.168.1.1');
             const [showVpnPanel, setShowVpnPanel] = useState(false);
+            const [showSettings, setShowSettings] = useState(false);
+            const [proxyBaseUrl, setProxyBaseUrl] = useState(''); // Empty means local
             const [proxyStatus, setProxyStatus] = useState('checking'); // 'checking', 'online', 'offline'
             const iframeRef = useRef(null);
 
@@ -63,8 +65,9 @@
 
             useEffect(() => {
                 const checkProxy = async () => {
+                    const testUrl = proxyBaseUrl ? `${proxyBaseUrl}/api/proxy?url=https://google.com` : '/api/proxy?url=https://google.com';
                     try {
-                        const res = await fetch('/api/proxy?url=https://google.com', { method: 'HEAD' });
+                        const res = await fetch(testUrl, { method: 'HEAD' });
                         setProxyStatus(res.ok ? 'online' : 'offline');
                     } catch (e) {
                         setProxyStatus('offline');
@@ -76,11 +79,11 @@
                 const initialUrl = params.get('url');
                 if (initialUrl) navigate(initialUrl);
                 lucide.createIcons();
-            }, []);
+            }, [proxyBaseUrl]);
 
             useEffect(() => {
                 lucide.createIcons();
-            }, [url, showVpnPanel, isVpnConnected, proxyStatus]);
+            }, [url, showVpnPanel, showSettings, isVpnConnected, proxyStatus]);
 
             const generateIp = () => Array.from({ length: 4 }, () => Math.floor(Math.random() * 256)).join('.');
 
@@ -109,11 +112,12 @@
                     }
                 }
 
-                if (proxyStatus === 'offline') {
+                if (proxyStatus === 'offline' && !proxyBaseUrl) {
                     // Fallback to direct navigation if proxy is offline (might be blocked by CORS but better than white screen)
                     setUrl(formattedUrl);
                 } else {
-                    const proxyUrl = `/api/proxy?url=${encodeURIComponent(formattedUrl)}&vpn=${isVpnConnected}&loc=${encodeURIComponent(vpnLocation)}`;
+                    const base = proxyBaseUrl || '';
+                    const proxyUrl = `${base}/api/proxy?url=${encodeURIComponent(formattedUrl)}&vpn=${isVpnConnected}&loc=${encodeURIComponent(vpnLocation)}`;
                     setUrl(proxyUrl);
                 }
                 
@@ -190,7 +194,7 @@
                             <button onClick={() => setShowVpnPanel(!showVpnPanel)} className={`p-2 rounded-full transition-all ${isVpnConnected ? 'text-blue-400 bg-blue-500/10' : 'text-white/60 hover:bg-white/5'}`}>
                                 <Icon name="shield" />
                             </button>
-                            <button className="p-2 hover:bg-white/5 rounded-full transition-colors text-white/60">
+                            <button onClick={() => setShowSettings(!showSettings)} className={`p-2 rounded-full transition-colors ${showSettings ? 'text-blue-400 bg-blue-500/10' : 'text-white/60 hover:bg-white/5'}`}>
                                 <Icon name="settings" />
                             </button>
                             <div className="h-6 w-[1px] bg-white/10 mx-1" />
@@ -200,6 +204,35 @@
                             </div>
                         </div>
                     </header>
+
+                    <AnimatePresence>
+                        {showSettings && (
+                            <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="absolute top-16 right-4 w-80 bg-[#141414] border border-white/10 rounded-2xl shadow-2xl z-50 p-4 overflow-hidden">
+                                <h3 className="text-sm font-bold uppercase tracking-widest text-white/40 mb-4">Proxy Settings</h3>
+                                <div className="space-y-4">
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-bold uppercase text-white/30 px-1">Proxy Base URL</label>
+                                        <input
+                                            type="text"
+                                            value={proxyBaseUrl}
+                                            onChange={(e) => setProxyBaseUrl(e.target.value)}
+                                            placeholder="e.g. https://my-proxy.run.app"
+                                            className="w-full bg-[#1e1e1e] border border-white/5 rounded-lg py-2 px-3 text-xs outline-none focus:border-blue-500/50 transition-all"
+                                        />
+                                        <p className="text-[9px] text-white/20 px-1 italic">Leave empty to use the local server.</p>
+                                    </div>
+                                    <div className="p-3 bg-white/5 rounded-xl border border-white/5">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-xs text-white/60">Backend Status</span>
+                                            <span className={`text-[10px] font-bold uppercase ${proxyStatus === 'online' ? 'text-green-500' : 'text-red-500'}`}>
+                                                {proxyStatus}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
 
                     <AnimatePresence>
                         {showVpnPanel && (
