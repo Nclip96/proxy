@@ -1,11 +1,25 @@
-<div align="center">
+# RMD Proxy + VPN
 
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+A lightweight, browser-like web proxy and VPN simulator designed for speed and privacy.
 
-  <h1>Built with AI Studio</h2>
+## Features
+- **VPN Simulator**: Toggle a secure connection with simulated global locations (USA, UK, Japan, etc.).
+- **Proxy Engine**: High-performance web proxy with HTML rewriting.
+- **Modern UI**: Clean, dark interface with real-time status updates.
+- **SPCK Optimized**: Minimal dependencies and flat structure for mobile editing.
 
-  <p>The fastest path from prompt to production with Gemini.</p>
+## How to Run
+1. Install dependencies:
+   ```bash
+   npm install
+   ```
+2. Start the development server:
+   ```bash
+   npm run dev
+   ```
+3. Open the App URL provided by your hosting environment.
 
-  <a href="https://aistudio.google.com/apps">Start building</a>
-
-</div>
+## SPCK Editor Tips
+- **Node.js Required**: This project uses a backend (`server.ts`). Ensure your hosting environment (AI Studio, Replit, etc.) supports Node.js.
+- **Lightweight**: The total project size is kept small for fast loading in mobile editors.
+- **Customization**: You can easily add more VPN locations in `src/App.tsx`.

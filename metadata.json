@@ -1,0 +1,5 @@
+{
+  "name": "RMD Proxy",
+  "description": "A browser-like web proxy with a clean interface, inspired by Helios.",
+  "requestFramePermissions": []
+}
