@@ -1,25 +1,19 @@
-# RMD Proxy + VPN
+# RMD Proxy + VPN (SPCK Optimized)
 
 A lightweight, browser-like web proxy and VPN simulator designed for speed and privacy.
 
-## Features
-- **VPN Simulator**: Toggle a secure connection with simulated global locations (USA, UK, Japan, etc.).
-- **Proxy Engine**: High-performance web proxy with HTML rewriting.
-- **Modern UI**: Clean, dark interface with real-time status updates.
-- **SPCK Optimized**: Minimal dependencies and flat structure for mobile editing.
+## 🚀 One-Click Run on SPCK
+This project is optimized to run instantly on mobile editors like **SPCK Editor**:
 
-## How to Run
-1. Install dependencies:
+1. **Web Project Mode**: Simply open `index.html` and click the **Play** button. The UI will load instantly using CDNs.
+2. **Node.js Mode**: If you want the proxy to work, run the backend:
    ```bash
    npm install
+   npm start
    ```
-2. Start the development server:
-   ```bash
-   npm run dev
-   ```
-3. Open the App URL provided by your hosting environment.
 
-## SPCK Editor Tips
-- **Node.js Required**: This project uses a backend (`server.ts`). Ensure your hosting environment (AI Studio, Replit, etc.) supports Node.js.
-- **Lightweight**: The total project size is kept small for fast loading in mobile editors.
-- **Customization**: You can easily add more VPN locations in `src/App.tsx`.
+## Features
+- **Zero-Build**: Frontend runs directly in any browser without `npm run build`.
+- **VPN Simulator**: Toggle global locations (USA, UK, Japan, etc.).
+- **Proxy Engine**: High-performance web proxy (requires `server.js` running).
+- **Ultra-Lightweight**: Only 4 files in the entire project!
