@@ -40,31 +40,57 @@ app.get("/api/proxy", async (req, res) => {
       headers,
       responseType: "text",
       validateStatus: () => true,
+      timeout: 10000,
     });
+
+    // Strip security headers that prevent iframing
+    res.setHeader('X-Frame-Options', 'ALLOWALL');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Content-Security-Policy', "default-src * 'unsafe-inline' 'unsafe-eval'; script-src * 'unsafe-inline' 'unsafe-eval'; style-src * 'unsafe-inline';");
 
     const $ = cheerio.load(response.data);
     const baseUrl = new URL(finalUrl).origin;
 
-    // Rewrite links and assets
+    // Rewrite links and assets to go through the proxy
     $("a, link, script, img, form").each((i, el) => {
       const tag = el.tagName.toLowerCase();
-      const attr = tag === "a" || tag === "link" ? "href" : (tag === "form" ? "action" : "src");
+      const attr = (tag === "a" || tag === "link") ? "href" : (tag === "form" ? "action" : "src");
       let val = $(el).attr(attr);
 
-      if (val && !val.startsWith("data:") && !val.startsWith("javascript:")) {
+      if (val && !val.startsWith("data:") && !val.startsWith("javascript:") && !val.startsWith("#")) {
         try {
-          const absoluteUrl = new URL(val, baseUrl).href;
-          $(el).attr(attr, `/api/proxy?url=${encodeURIComponent(absoluteUrl)}`);
+          const absoluteUrl = new URL(val, finalUrl).href;
+          $(el).attr(attr, `/api/proxy?url=${encodeURIComponent(absoluteUrl)}&vpn=${isVpn}&loc=${encodeURIComponent(location || '')}`);
         } catch (e) {}
       }
     });
 
-    // Inject base tag
-    $("head").prepend(`<base href="${baseUrl}">`);
+    // Inject base tag and a small script to handle dynamic loads
+    $("head").prepend(`
+      <base href="${baseUrl}">
+      <script>
+        // Simple interceptor for dynamic fetches (experimental)
+        const _fetch = window.fetch;
+        window.fetch = function(url, options) {
+          if (typeof url === 'string' && !url.startsWith('http') && !url.startsWith('/api/proxy')) {
+            url = '/api/proxy?url=' + encodeURIComponent(new URL(url, window.location.href).href);
+          }
+          return _fetch(url, options);
+        };
+      </script>
+    `);
 
     res.send($.html());
   } catch (error) {
-    res.status(500).send(`Proxy Error: ${error.message}`);
+    console.error("Proxy Error:", error.message);
+    res.status(500).send(`
+      <div style="background:#111;color:#ff4444;padding:20px;font-family:sans-serif;height:100vh;">
+        <h1>Proxy Error</h1>
+        <p>${error.message}</p>
+        <p>Make sure the URL is correct and the site allows proxying.</p>
+        <button onclick="window.location.reload()" style="background:#444;color:white;border:none;padding:10px 20px;border-radius:5px;cursor:pointer;">Retry</button>
+      </div>
+    `);
   }
 });
 

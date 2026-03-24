@@ -54,6 +54,7 @@
             const [vpnLocation, setVpnLocation] = useState('USA - New York');
             const [virtualIp, setVirtualIp] = useState('192.168.1.1');
             const [showVpnPanel, setShowVpnPanel] = useState(false);
+            const [proxyStatus, setProxyStatus] = useState('checking'); // 'checking', 'online', 'offline'
             const iframeRef = useRef(null);
 
             const locations = [
@@ -61,16 +62,25 @@
             ];
 
             useEffect(() => {
+                const checkProxy = async () => {
+                    try {
+                        const res = await fetch('/api/proxy?url=https://google.com', { method: 'HEAD' });
+                        setProxyStatus(res.ok ? 'online' : 'offline');
+                    } catch (e) {
+                        setProxyStatus('offline');
+                    }
+                };
+                checkProxy();
+
                 const params = new URLSearchParams(window.location.search);
                 const initialUrl = params.get('url');
                 if (initialUrl) navigate(initialUrl);
-                // Initialize Lucide icons
                 lucide.createIcons();
             }, []);
 
             useEffect(() => {
                 lucide.createIcons();
-            }, [url, showVpnPanel, isVpnConnected]);
+            }, [url, showVpnPanel, isVpnConnected, proxyStatus]);
 
             const generateIp = () => Array.from({ length: 4 }, () => Math.floor(Math.random() * 256)).join('.');
 
@@ -99,8 +109,14 @@
                     }
                 }
 
-                const proxyUrl = `/api/proxy?url=${encodeURIComponent(formattedUrl)}&vpn=${isVpnConnected}&loc=${encodeURIComponent(vpnLocation)}`;
-                setUrl(proxyUrl);
+                if (proxyStatus === 'offline') {
+                    // Fallback to direct navigation if proxy is offline (might be blocked by CORS but better than white screen)
+                    setUrl(formattedUrl);
+                } else {
+                    const proxyUrl = `/api/proxy?url=${encodeURIComponent(formattedUrl)}&vpn=${isVpnConnected}&loc=${encodeURIComponent(vpnLocation)}`;
+                    setUrl(proxyUrl);
+                }
+                
                 setInputUrl(formattedUrl);
                 setIsLoading(true);
 
@@ -229,6 +245,14 @@
                                         <h1 className="text-7xl font-bold tracking-tighter relative">RMD<span className="text-blue-500">.</span></h1>
                                     </div>
                                     <p className="text-white/40 text-lg font-light leading-relaxed">A high-performance web proxy designed for speed, privacy, and simplicity.</p>
+                                    
+                                    {proxyStatus === 'offline' && (
+                                        <div className="bg-red-500/10 border border-red-500/20 p-4 rounded-2xl text-red-400 text-sm">
+                                            <p className="font-bold mb-1">Proxy Server Offline</p>
+                                            <p className="opacity-70">The backend proxy is not running. Please run <code className="bg-black/20 px-1 rounded">npm start</code> in your terminal to enable full proxy features.</p>
+                                        </div>
+                                    )}
+
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-8">
                                         {[{ icon: 'shield', title: 'Secure' }, { icon: 'globe', title: 'Global' }, { icon: 'external-link', title: 'Fast' }].map((feature, i) => (
                                             <div key={i} className="p-4 bg-[#141414] border border-white/5 rounded-2xl text-left hover:border-white/10 transition-colors">
@@ -245,13 +269,22 @@
                                 </motion.div>
                             </div>
                         ) : (
-                            <iframe ref={iframeRef} src={url} className="w-full h-full border-none" onLoad={() => setIsLoading(false)} title="Browser Viewport" />
+                            <iframe ref={iframeRef} src={url} className="w-full h-full border-none" onLoad={() => setIsLoading(false)} title="Browser Viewport" referrerPolicy="no-referrer" />
                         )}
                     </main>
 
                     <footer className="px-4 py-1 bg-[#141414] border-t border-white/5 flex items-center justify-between text-[10px] text-white/30 uppercase tracking-widest font-bold">
-                        <div className="flex items-center gap-4"><span>Status: {isLoading ? 'Loading...' : 'Ready'}</span><span>Region: US-WEST</span></div>
-                        <div className="flex items-center gap-4"><span>v1.0.4-rmd</span><span className="text-blue-500/50">Secure Connection</span></div>
+                        <div className="flex items-center gap-4">
+                            <span>Status: {isLoading ? 'Loading...' : 'Ready'}</span>
+                            <span className={`flex items-center gap-1 ${proxyStatus === 'online' ? 'text-green-500' : (proxyStatus === 'offline' ? 'text-red-500' : 'text-yellow-500')}`}>
+                                <div className={`w-1.5 h-1.5 rounded-full ${proxyStatus === 'online' ? 'bg-green-500' : (proxyStatus === 'offline' ? 'bg-red-500' : 'bg-yellow-500 animate-pulse')}`} />
+                                Proxy: {proxyStatus}
+                            </span>
+                        </div>
+                        <div className="flex items-center gap-4">
+                            <span>v1.0.5-rmd</span>
+                            <span className="text-blue-500/50">Secure Connection</span>
+                        </div>
                     </footer>
                 </div>
             );
