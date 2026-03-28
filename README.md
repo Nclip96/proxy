@@ -16,3 +16,4 @@ This project is optimized to run instantly on mobile editors like **SPCK Editor*
 - **Zero-Build**: Frontend runs directly in any browser without `npm run build`.
 - **VPN Simulator**: Toggle global locations (USA, UK, Japan, etc.).
 - **Proxy Engine**: High-performance web proxy (requires `server.js` running).
+- **Ultra-Lightweight**: Only 4 files in the entire project!
