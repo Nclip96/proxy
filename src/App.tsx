@@ -14,8 +14,11 @@ export default function App() {
   const [showVpnPanel, setShowVpnPanel] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [proxyBaseUrl, setProxyBaseUrl] = useState(''); // Empty means local
+  const [usePublicProxy, setUsePublicProxy] = useState(true); // Fallback for static hosts
   const [proxyStatus, setProxyStatus] = useState<'checking' | 'online' | 'offline'>('checking');
   const iframeRef = useRef<HTMLIFrameElement>(null);
+
+  const PUBLIC_PROXY = "https://api.allorigins.win/raw?url=";
 
   const locations = [
     'USA - New York',
@@ -74,7 +77,18 @@ export default function App() {
     }
 
     const base = proxyBaseUrl || '';
-    const proxyUrl = `${base}/api/proxy?url=${encodeURIComponent(formattedUrl)}&vpn=${isVpnConnected}&loc=${encodeURIComponent(vpnLocation)}`;
+    let proxyUrl = '';
+    
+    if (proxyStatus === 'online' || proxyBaseUrl) {
+      proxyUrl = `${base}/api/proxy?url=${encodeURIComponent(formattedUrl)}&vpn=${isVpnConnected}&loc=${encodeURIComponent(vpnLocation)}`;
+    } else if (usePublicProxy) {
+      // Fallback for static hosts like GitHub Pages
+      proxyUrl = `${PUBLIC_PROXY}${encodeURIComponent(formattedUrl)}`;
+    } else {
+      // Direct navigation (will likely be blocked by CORS for many sites)
+      proxyUrl = formattedUrl;
+    }
+
     setUrl(proxyUrl);
     setInputUrl(formattedUrl);
     setIsLoading(true);
@@ -96,7 +110,16 @@ export default function App() {
       const prevUrl = history[historyIndex - 1];
       setHistoryIndex(historyIndex - 1);
       const base = proxyBaseUrl || '';
-      const proxyUrl = `${base}/api/proxy?url=${encodeURIComponent(prevUrl)}`;
+      let proxyUrl = '';
+      
+      if (proxyStatus === 'online' || proxyBaseUrl) {
+        proxyUrl = `${base}/api/proxy?url=${encodeURIComponent(prevUrl)}`;
+      } else if (usePublicProxy) {
+        proxyUrl = `${PUBLIC_PROXY}${encodeURIComponent(prevUrl)}`;
+      } else {
+        proxyUrl = prevUrl;
+      }
+      
       setUrl(proxyUrl);
       setInputUrl(prevUrl);
     }
@@ -107,7 +130,16 @@ export default function App() {
       const nextUrl = history[historyIndex + 1];
       setHistoryIndex(historyIndex + 1);
       const base = proxyBaseUrl || '';
-      const proxyUrl = `${base}/api/proxy?url=${encodeURIComponent(nextUrl)}`;
+      let proxyUrl = '';
+      
+      if (proxyStatus === 'online' || proxyBaseUrl) {
+        proxyUrl = `${base}/api/proxy?url=${encodeURIComponent(nextUrl)}`;
+      } else if (usePublicProxy) {
+        proxyUrl = `${PUBLIC_PROXY}${encodeURIComponent(nextUrl)}`;
+      } else {
+        proxyUrl = nextUrl;
+      }
+      
       setUrl(proxyUrl);
       setInputUrl(nextUrl);
     }
@@ -205,8 +237,17 @@ export default function App() {
             className="absolute top-16 right-4 w-80 bg-[#141414] border border-white/10 rounded-2xl shadow-2xl z-50 p-4 overflow-hidden"
           >
             <h3 className="text-sm font-bold uppercase tracking-widest text-white/40 mb-4">Proxy Settings</h3>
-            <div className="space-y-4">
-              <div className="space-y-2">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between px-1">
+                  <span className="text-xs text-white/60">Use Public Fallback</span>
+                  <button 
+                    onClick={() => setUsePublicProxy(!usePublicProxy)}
+                    className={`w-10 h-5 rounded-full transition-all relative ${usePublicProxy ? 'bg-blue-500' : 'bg-white/10'}`}
+                  >
+                    <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${usePublicProxy ? 'left-6' : 'left-1'}`} />
+                  </button>
+                </div>
+                <div className="space-y-2">
                 <label className="text-[10px] font-bold uppercase text-white/30 px-1">Proxy Base URL</label>
                 <input
                   type="text"
